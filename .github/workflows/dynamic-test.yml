@@ -28,6 +28,13 @@ permissions:
 
 env:
   NODE_VERSION: "24.1.0"
+  # Define all potential environment variables here
+  VITE_API_BASE_URL_MAIN_GLOBAL: "https://api.example.com/main/global"
+  VITE_API_BASE_URL_MAIN_OTHER: "https://api.example.com/main/other"
+  VITE_OIDC_REDIRECT_URI_MAIN_GLOBAL: "https://redirect.example.com/main/global"
+  VITE_OIDC_REDIRECT_URI_MAIN_OTHER: "https://redirect.example.com/main/other"
+  VITE_OIDC_CLIENT_ID: "your-client-id"
+  VITE_OIDC_TENANT_ID: "your-tenant-id"
 
 jobs:
   build-and-deploy:
@@ -73,19 +80,14 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - name: Set environment variables
-        id: set-env-vars
-        run: |
-          echo "VITE_API_BASE_URL=${{ vars["VITE_API_BASE_URL_" + steps.normalize.outputs.env_upper + "_" + steps.normalize.outputs.site_upper] }}" >> $GITHUB_ENV
-          echo "VITE_OIDC_REDIRECT_URI=${{ vars["VITE_OIDC_REDIRECT_URI_" + steps.normalize.outputs.env_upper + "_" + steps.normalize.outputs.site_upper] }}" >> $GITHUB_ENV
-          echo "VITE_OIDC_CLIENT_ID=${{ vars.VITE_OIDC_CLIENT_ID }}" >> $GITHUB_ENV
-          echo "VITE_OIDC_TENANT_ID=${{ vars.VITE_OIDC_TENANT_ID }}" >> $GITHUB_ENV
-
       - name: Build application
         working-directory: web
         env:
-          API_VAR: VITE_API_BASE_URL_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
-          REDIRECT_VAR: VITE_OIDC_REDIRECT_URI_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
+          # Set the values based on the environment and site
+          VITE_API_BASE_URL: ${{ env["VITE_API_BASE_URL_" + steps.normalize.outputs.env_upper + "_" + steps.normalize.outputs.site_upper] }}
+          VITE_OIDC_REDIRECT_URI: ${{ env["VITE_OIDC_REDIRECT_URI_" + steps.normalize.outputs.env_upper + "_" + steps.normalize.outputs.site_upper] }}
+          VITE_OIDC_CLIENT_ID: ${{ env.VITE_OIDC_CLIENT_ID }}
+          VITE_OIDC_TENANT_ID: ${{ env.VITE_OIDC_TENANT_ID }}
           
         run: |
           npm run build
