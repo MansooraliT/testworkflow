@@ -76,10 +76,10 @@ jobs:
       - name: Build application
         working-directory: web
         run: |
-          export VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL_MAIN_GLOBAL }}
-          export VITE_OIDC_REDIRECT_URI: ${{ vars.VITE_OIDC_REDIRECT_URI_MAIN_GLOBAL }}
-          export VITE_OIDC_CLIENT_ID: ${{ vars.VITE_OIDC_CLIENT_ID }}
-          export VITE_OIDC_TENANT_ID: ${{ vars.VITE_OIDC_TENANT_ID }}
+          export VITE_API_BASE_URL= ${{ vars.VITE_API_BASE_URL_MAIN_GLOBAL }}
+          export VITE_OIDC_REDIRECT_URI= ${{ vars.VITE_OIDC_REDIRECT_URI_MAIN_GLOBAL }}
+          export VITE_OIDC_CLIENT_ID= ${{ vars.VITE_OIDC_CLIENT_ID }}
+          export VITE_OIDC_TENANT_ID= ${{ vars.VITE_OIDC_TENANT_ID }}
           npm run build
 
           if [[ ! -d "dist" || ! -f "dist/index.html" ]]; then
