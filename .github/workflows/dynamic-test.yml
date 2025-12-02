@@ -92,10 +92,13 @@ jobs:
             echo "ERROR: Variable $API_VAR not found in GitHub Variables!"
             exit 1
           fi
+          echo "Deploying to S3 bucket: $API_VAR"
 
           if [[ -z "$REDIRECT_VAR" ]]; then
             echo "ERROR: Variable $REDIRECT_VAR not found in GitHub Variables!"
             exit 1
           fi
-          
+
+          echo "Deploying to S3 bucket: $REDIRECT_VAR"
+        
           npm run build
