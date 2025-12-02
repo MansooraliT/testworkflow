@@ -28,6 +28,9 @@ permissions:
 
 env:
   NODE_VERSION: "24.1.0"
+  API_VARS: VITE_API_BASE_URL_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
+  REDIRECT_VARS: VITE_OIDC_REDIRECT_URI_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
+
 
 jobs:
   build-and-deploy:
@@ -76,29 +79,14 @@ jobs:
       - name: Build application
         working-directory: web
         env:
-          API_VAR: VITE_API_BASE_URL_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
-          REDIRECT_VAR: VITE_OIDC_REDIRECT_URI_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
-
+          VITE_API_BASE_URL: ${{ vars[env.API_VARS] }}
+          VITE_OIDC_REDIRECT_URI: ${{ vars[env.REDIRECT_VARS] }}
           VITE_OIDC_CLIENT_ID: ${{ vars.VITE_OIDC_CLIENT_ID }}
           VITE_OIDC_TENANT_ID: ${{ vars.VITE_OIDC_TENANT_ID }}
         run: |
-          echo "Looking for GitHub variable: $API_VAR"
-          echo "Looking for GitHub variable: $REDIRECT_VAR"
-          
-          VITE_API_BASE_URL: ${{ vars[env.API_VAR] }}
-          VITE_OIDC_REDIRECT_URI: ${{ vars[env.REDIRECT_VAR] }}
-          
-          if [[ -z "$API_VAR" ]]; then
-            echo "ERROR: Variable $API_VAR not found in GitHub Variables!"
-            exit 1
-          fi
-          echo "Deploying to S3 bucket: $API_VAR"
-
-          if [[ -z "$REDIRECT_VAR" ]]; then
-            echo "ERROR: Variable $REDIRECT_VAR not found in GitHub Variables!"
-            exit 1
-          fi
-
-          echo "Deploying to S3 bucket: $REDIRECT_VAR"
-        
           npm run build
+
+          if [[ ! -d "dist" || ! -f "dist/index.html" ]]; then
+            echo "Build failed — missing dist folder"
+            exit 1
+          fi
