@@ -21,6 +21,7 @@ on:
         required: true
         options:
           - global
+          - dryrun_global
 
 permissions:
   id-token: write
