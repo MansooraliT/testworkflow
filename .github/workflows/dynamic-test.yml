@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "web/**"
 
   workflow_dispatch:
     inputs:
@@ -34,7 +32,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: ${{ github.event.inputs.environment || 'main' }}
     timeout-minutes: 60
 
     steps:
@@ -88,5 +86,31 @@ jobs:
         run: |
           echo "API_VAR: $API_VAR"
           echo "REDIRECT_VAR: $REDIRECT_VAR"
-          echo "API BASE URL: $VITE_API_BASE_URL"
-          echo "REDIRECT URI: $VITE_OIDC_REDIRECT_URI"
+          echo "Resolved VITE_API_BASE_URL: $VITE_API_BASE_URL"
+          echo "Resolved VITE_OIDC_REDIRECT_URI: $VITE_OIDC_REDIRECT_URI"
+
+          if [[ -z "$VITE_API_BASE_URL" ]]; then
+            echo "❌ Missing GitHub variable: $API_VAR"
+            exit 1
+          fi
+
+          if [[ -z "$VITE_OIDC_REDIRECT_URI" ]]; then
+            echo "❌ Missing GitHub variable: $REDIRECT_VAR"
+            exit 1
+          fi
+
+          npm install
+          npm run build
+
+          if [[ ! -d "dist" || ! -f "dist/index.html" ]]; then
+            echo "❌ Build failed — dist folder missing"
+            exit 1
+          fi
+
+      - name: Build summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ steps.target.outputs.env }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Site**: ${{ steps.target.outputs.site }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **API Base URL**: ${{ vars[format('VITE_API_BASE_URL_%s_%s', steps.normalize.outputs.env_upper, steps.normalize.outputs.site_upper)] }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Redirect URI**: ${{ vars[format('VITE_OIDC_REDIRECT_URI_%s_%s', steps.normalize.outputs.env_upper, steps.normalize.outputs.site_upper)] }}" >> $GITHUB_STEP_SUMMARY
