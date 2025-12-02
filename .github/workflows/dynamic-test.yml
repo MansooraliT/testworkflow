@@ -6,6 +6,8 @@ on:
 jobs:
   test-dynamic-vars:
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'main' }}
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
