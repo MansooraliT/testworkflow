@@ -1,42 +1,93 @@
-name: Dynamic Variable Test
+name: Web Build
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "web/**"
+
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        type: choice
+        required: true
+        default: main
+        options:
+          - main
+
+      site:
+        description: "Site to deploy"
+        type: choice
+        required: true
+        options:
+          - global
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: "24.1.0"
 
 jobs:
-  test-dynamic-vars:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'main' }}
+    environment: ${{ github.event.inputs.environment }}
     timeout-minutes: 60
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Normalize (dummy values)
+      - name: Determine deployment target
+        id: target
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "env=main" >> $GITHUB_OUTPUT
+            echo "site=global" >> $GITHUB_OUTPUT
+          else
+            echo "env=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "site=${{ github.event.inputs.site }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Normalize variable keys
         id: normalize
         run: |
-          echo "env_upper=DEV" >> $GITHUB_OUTPUT
-          echo "site_upper=GLOBAL" >> $GITHUB_OUTPUT
+          ENV_UPPER=$(echo "${{ steps.target.outputs.env }}" | tr '[:lower:]' '[:upper:]')
+          SITE_UPPER=$(echo "${{ steps.target.outputs.site }}" | tr '[:lower:]' '[:upper:]' | tr -d '-')
 
-      - name: Test Dynamic Vars
-        id: dynamic
-        env:
-          # 1) Build a dynamic GitHub variable name using env:
-          TEST_KEY: TEST_VALUE_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
+          echo "env_upper=$ENV_UPPER" >> $GITHUB_OUTPUT
+          echo "site_upper=$SITE_UPPER" >> $GITHUB_OUTPUT
 
-          # 2) Read GitHub variable dynamically:
-          DYNAMIC_TEST_VALUE: ${{ vars[env.TEST_KEY] }}
-
-          # 3) Static test value
-          STATIC_TEST_VALUE: ${{ vars.TEST_VALUE_HELLO_WORLD }}
+      - name: Show selected deployment
         run: |
-          echo "TEST_KEY          = $TEST_KEY"
-          echo "STATIC_TEST_VALUE = $STATIC_TEST_VALUE"
-          echo "DYNAMIC_TEST_VALUE= $DYNAMIC_TEST_VALUE"
+          echo "Environment: ${{ steps.target.outputs.env }}"
+          echo "Site:        ${{ steps.target.outputs.site }}"
+          echo "ENV_UPPER:   ${{ steps.normalize.outputs.env_upper }}"
+          echo "SITE_UPPER:  ${{ steps.normalize.outputs.site_upper }}"
 
-          if [[ -z "$DYNAMIC_TEST_VALUE" ]]; then
-            echo "❌ Dynamic variable not resolved!"
-            exit 1
-          fi
-          echo "✔ Dynamic variable resolved successfully!"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm install
+
+      - name: Build application
+        working-directory: web
+        env:
+          API_VARS: VITE_API_BASE_URL_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
+          REDIRECT_VARS: VITE_OIDC_REDIRECT_URI_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
+
+          VITE_API_BASE_URL: ${{ vars[env.API_VARS] }}
+          VITE_OIDC_REDIRECT_URI: ${{ vars[env.REDIRECT_VARS] }}
+          VITE_OIDC_CLIENT_ID: ${{ vars.VITE_OIDC_CLIENT_ID }}
+          VITE_OIDC_TENANT_ID: ${{ vars.VITE_OIDC_TENANT_ID }}
+        run: |
+          npm run build
