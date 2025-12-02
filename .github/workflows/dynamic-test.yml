@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "web/**"
 
   workflow_dispatch:
     inputs:
@@ -89,5 +87,15 @@ jobs:
           
           VITE_API_BASE_URL: ${{ vars[env.API_VAR] }}
           VITE_OIDC_REDIRECT_URI: ${{ vars[env.REDIRECT_VAR] }}
+          
+          if [[ -z "$API_VAR" ]]; then
+            echo "ERROR: Variable $API_VAR not found in GitHub Variables!"
+            exit 1
+          fi
+
+          if [[ -z "$REDIRECT_VAR" ]]; then
+            echo "ERROR: Variable $REDIRECT_VAR not found in GitHub Variables!"
+            exit 1
+          fi
           
           npm run build
