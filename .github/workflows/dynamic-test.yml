@@ -79,38 +79,11 @@ jobs:
           API_VAR: VITE_API_BASE_URL_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
           REDIRECT_VAR: VITE_OIDC_REDIRECT_URI_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
 
-          VITE_API_BASE_URL: ${{ vars[env.API_VAR] }}
-          VITE_OIDC_REDIRECT_URI: ${{ vars[env.REDIRECT_VAR] }}
+          VITE_API_BASE_URL: ${{ vars.VITE_OIDC_REDIRECT_URI_MAIN_GLOBAL }}
+          VITE_OIDC_REDIRECT_URI: ${{ vars.VITE_API_BASE_URL_MAIN_GLOBAL }}
           VITE_OIDC_CLIENT_ID: ${{ vars.VITE_OIDC_CLIENT_ID }}
           VITE_OIDC_TENANT_ID: ${{ vars.VITE_OIDC_TENANT_ID }}
         run: |
-          echo "API_VAR: $API_VAR"
-          echo "REDIRECT_VAR: $REDIRECT_VAR"
-          echo "Resolved VITE_API_BASE_URL: $VITE_API_BASE_URL"
-          echo "Resolved VITE_OIDC_REDIRECT_URI: $VITE_OIDC_REDIRECT_URI"
-
-          if [[ -z "$VITE_API_BASE_URL" ]]; then
-            echo "❌ Missing GitHub variable: $API_VAR"
-            exit 1
-          fi
-
-          if [[ -z "$VITE_OIDC_REDIRECT_URI" ]]; then
-            echo "❌ Missing GitHub variable: $REDIRECT_VAR"
-            exit 1
-          fi
-
-          npm install
           npm run build
 
-          if [[ ! -d "dist" || ! -f "dist/index.html" ]]; then
-            echo "❌ Build failed — dist folder missing"
-            exit 1
-          fi
-
-      - name: Build summary
-        run: |
-          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: ${{ steps.target.outputs.env }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Site**: ${{ steps.target.outputs.site }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **API Base URL**: ${{ vars[format('VITE_API_BASE_URL_%s_%s', steps.normalize.outputs.env_upper, steps.normalize.outputs.site_upper)] }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Redirect URI**: ${{ vars[format('VITE_OIDC_REDIRECT_URI_%s_%s', steps.normalize.outputs.env_upper, steps.normalize.outputs.site_upper)] }}" >> $GITHUB_STEP_SUMMARY
+        
