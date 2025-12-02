@@ -1,0 +1,40 @@
+name: Dynamic Variable Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-dynamic-vars:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Normalize (dummy values)
+        id: normalize
+        run: |
+          echo "env_upper=DEV" >> $GITHUB_OUTPUT
+          echo "site_upper=GLOBAL" >> $GITHUB_OUTPUT
+
+      - name: Test Dynamic Vars
+        id: dynamic
+        env:
+          # 1) Build a dynamic GitHub variable name using env:
+          TEST_KEY: TEST_VALUE_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
+
+          # 2) Read GitHub variable dynamically:
+          DYNAMIC_TEST_VALUE: ${{ vars[env.TEST_KEY] }}
+
+          # 3) Static test value
+          STATIC_TEST_VALUE: ${{ vars.TEST_VALUE_HELLO_WORLD }}
+        run: |
+          echo "TEST_KEY          = $TEST_KEY"
+          echo "STATIC_TEST_VALUE = $STATIC_TEST_VALUE"
+          echo "DYNAMIC_TEST_VALUE= $DYNAMIC_TEST_VALUE"
+
+          if [[ -z "$DYNAMIC_TEST_VALUE" ]]; then
+            echo "❌ Dynamic variable not resolved!"
+            exit 1
+          fi
+          echo "✔ Dynamic variable resolved successfully!"
