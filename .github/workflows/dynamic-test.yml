@@ -79,12 +79,11 @@ jobs:
         env:
           API_VARS: VITE_API_BASE_URL_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
           REDIRECT_VARS: VITE_OIDC_REDIRECT_URI_${{ steps.normalize.outputs.env_upper }}_${{ steps.normalize.outputs.site_upper }}
-
+          VITE_OIDC_CLIENT_ID: ${{ vars.VITE_OIDC_CLIENT_ID }}
+          VITE_OIDC_TENANT_ID: ${{ vars.VITE_OIDC_TENANT_ID }}
         run: |
           export VITE_API_BASE_URL=${{ vars[env.API_VARS] }}
           export VITE_OIDC_REDIRECT_URI=${{ vars[env.REDIRECT_VARS] }}
-          export VITE_OIDC_CLIENT_ID=${{ vars.VITE_OIDC_CLIENT_ID }}
-          export VITE_OIDC_TENANT_ID=${{ vars.VITE_OIDC_TENANT_ID }}
           
           echo "🔍 Values before build:"
           echo "VITE_API_BASE_URL=$VITE_API_BASE_URL"
